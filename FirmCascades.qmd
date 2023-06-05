@@ -1,0 +1,86 @@
+---
+title: "Firm Cascades"
+---
+
+## Firm Cascades
+
+
+We will try to simulate firm cascades mainly in four different ways. 
+Ideally, we need to have firm level data to calibrate our simulation.
+We lack that data
+
+
+### Cascades in Cross-hoolding Ownership networks
+
+Assume three four firms. Asset and liabilities are interrelated. 
+Each firm has a market value.
+
+Let's call these firms, Firm1, Firm2, Firm3 and Firm4.
+First we assign market values to each and assign an asset-liability matrix.
+
+```{r setupFirm}
+n <-4
+names <- c("Firm1", "Firm2","Firm3","Firm4")
+MV <- c(100, 400, 600, 1000) # the market values of the firms respectively
+MV_new <- c(100, 200, 600, 1000)
+C_raw <- matrix(c(0, 50, 100, 400,  100, 0, 300, 500, 200, 50, 0, 400, 40, 100, 500, 0), ncol = n, byrow = T)
+C_raw
+c <- 0.7
+C <- c * C_raw %*% diag(1 / colSums(C_raw))
+C
+
+Chat <- (1 - c) * diag(n)
+
+A <- Chat %*% solve(diag(n) - C)
+A
+
+theta <- 0.9
+
+v_threshold <- theta * (A %*% MV)
+
+all_failure_indicator <- rep(0, n)
+
+pcurrent <- MV_new
+```
+
+
+In order to see the effect of the drop of market value of the Firm 2, we trace the cascade effects
+
+```{r loop}
+for (wave in 1:2)  {
+  #wave <- wave + 1
+  new_failure_indicator <- as.numeric((A %*% pcurrent) < v_threshold & all_failure_indicator == 0)
+  
+  all_failure_indicator <- pmax(all_failure_indicator, new_failure_indicator)
+  # All failures to date
+  
+  pcurrent <- pcurrent - new_failure_indicator * v_threshold / 2
+  
+  new_failed_firms <- which(new_failure_indicator == 1)
+  
+  new_failed_names <- names[new_failed_firms]
+  
+  if (length(new_failed_firms) > 0) {
+    cat('Wave', wave, 'failures are:\n')
+    cat(toString(new_failed_names))
+    cat('\n')
+  }
+  
+}
+
+```
+
+
+
+Thus, a medium sized firm, having lost half of its market value,  will cause the whole firm network to collapse.
+
+
+## Trade Credit Cascades
+
+
+
+
+## Supply Chain Cascades
+
+
+
